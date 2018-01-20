@@ -54,11 +54,16 @@ type Stepper struct {
 // Create a Stepper struct with enough data to drive a stepper. Less critical values like HoldEnable may be changed by
 // the user after initialization.
 func InitStepper(enaPin int, pinA int, pinB int, pinC int, pinD int, pulseDuration time.Duration) *Stepper {
-	ena, _ := sysfsGPIO.InitPin(enaPin, "out")
-	a, _ := sysfsGPIO.InitPin(pinA, "out")
-	b, _ := sysfsGPIO.InitPin(pinB, "out")
-	c, _ := sysfsGPIO.InitPin(pinC, "out")
-	d, _ := sysfsGPIO.InitPin(pinD, "out")
+	ena, err := sysfsGPIO.InitPin(enaPin, "out")
+	initStepperGpioErrorHandler(err)
+	a, err := sysfsGPIO.InitPin(pinA, "out")
+	initStepperGpioErrorHandler(err)
+	b, err := sysfsGPIO.InitPin(pinB, "out")
+	initStepperGpioErrorHandler(err)
+	c, err := sysfsGPIO.InitPin(pinC, "out")
+	initStepperGpioErrorHandler(err)
+	d, err := sysfsGPIO.InitPin(pinD, "out")
+	initStepperGpioErrorHandler(err)
 
 	stepper := Stepper{
 		pinEna: ena,
@@ -73,6 +78,13 @@ func InitStepper(enaPin int, pinA int, pinB int, pinC int, pinD int, pulseDurati
 	}
 
 	return &stepper
+}
+
+// Helper function for InitStepper to debug
+func initStepperGpioErrorHandler(err error) {
+	if err != nil {
+		fmt.Println("GPIO error while initializing stepper:", err)
+	}
 }
 
 // Internal generalized step method. The public stepping methods shall call this method.
@@ -107,25 +119,21 @@ func (s *Stepper) step(numSteps int) {
 		// Set the pin outputs based on the new state
 		switch s.stepState {
 			case 0:
-				fmt.Println(s.stepState)
 				s.pinA.SetHigh()
 				s.pinB.SetLow()
 				s.pinC.SetHigh()
 				s.pinD.SetLow()
 			case 1:
-				fmt.Println(s.stepState)
 				s.pinA.SetLow()
 				s.pinB.SetHigh()
 				s.pinC.SetHigh()
 				s.pinD.SetLow()
 			case 2:
-				fmt.Println(s.stepState)
 				s.pinA.SetLow()
 				s.pinB.SetHigh()
 				s.pinC.SetLow()
 				s.pinD.SetHigh()
 			case 3:
-				fmt.Println(s.stepState)
 				s.pinA.SetHigh()
 				s.pinB.SetLow()
 				s.pinC.SetLow()
