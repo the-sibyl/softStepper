@@ -37,7 +37,7 @@ func main() {
 //	stepper2 := InitStepper(30, 21, 22, 23, 24)
 //	stepper3 := InitStepper(31, 26, 27, 28, 29)
 
-	stepper1 := softStepper.InitStepper(2, 3, 4, 17, 27, 5)
+	stepper1 := softStepper.InitStepper(2, 3, 4, 17, 27, time.Millisecond * 5)
 
 //	stepper2 := InitStepper(, 5, 6, 13, 19)
 //	stepper3 := InitStepper(, 12, 16, 20, 21)

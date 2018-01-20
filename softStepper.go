@@ -45,7 +45,7 @@ type Stepper struct {
 	// Stepper state. The valid range is 0 to 3.
 	stepState int;
 	// Pulse duration in milliseconds
-	pulseDurationMilliseconds int;
+	pulseDuration time.Duration;
 	// Internal flag for enabling a hold on the stepper. This flag leaves the driver IC enabled and providing
 	// current.
 	holdEnable bool;
@@ -53,7 +53,7 @@ type Stepper struct {
 
 // Create a Stepper struct with enough data to drive a stepper. Less critical values like HoldEnable may be changed by
 // the user after initialization.
-func InitStepper(enaPin int, pinA int, pinB int, pinC int, pinD int, pulseDurationMilliseconds int) *Stepper {
+func InitStepper(enaPin int, pinA int, pinB int, pinC int, pinD int, pulseDuration time.Duration) *Stepper {
 	ena, _ := sysfsGPIO.InitPin(enaPin, "out")
 	a, _ := sysfsGPIO.InitPin(pinA, "out")
 	b, _ := sysfsGPIO.InitPin(pinB, "out")
@@ -68,7 +68,7 @@ func InitStepper(enaPin int, pinA int, pinB int, pinC int, pinD int, pulseDurati
 		pinD: d,
 		stepDirectionForward: true,
 		stepState: 0,
-		pulseDurationMilliseconds: pulseDurationMilliseconds,
+		pulseDuration: pulseDuration,
 		holdEnable: false,
 	}
 
@@ -137,7 +137,7 @@ func (s *Stepper) step(numSteps int) {
 		// Now that the new stepper state is driven on the output pins, assert the enable signal so that the driver IC
 		// will provide current to the motor.
 		s.pinEna.SetHigh()
-		time.Sleep(time.Millisecond * time.Duration(s.pulseDurationMilliseconds))
+		time.Sleep(s.pulseDuration)
 	}
 
 	// If the stepper is in holding mode, keep the enable pin asserted so that the coils continue to be driven with
