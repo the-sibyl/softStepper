@@ -183,23 +183,3 @@ func (s *Stepper) DisableHold() {
 	s.pinEna.SetLow()
 }
 
-func test_main() {
-//	stepper1 := InitStepper(8, 9, 7, 0, 2)
-//	stepper2 := InitStepper(30, 21, 22, 23, 24)
-//	stepper3 := InitStepper(31, 26, 27, 28, 29)
-
-	stepper1 := InitStepper(2, 3, 4, 17, 27, 5)
-
-//	stepper2 := InitStepper(, 5, 6, 13, 19)
-//	stepper3 := InitStepper(, 12, 16, 20, 21)
-
-	fmt.Println(stepper1)
-//	fmt.Println(stepper2)
-
-	for k := 0; k < 100; k++ {
-		stepper1.StepForward()
-		time.Sleep(time.Millisecond * 200)
-//		stepper2.Step()
-//		stepper3.Step()
-	}
-}
