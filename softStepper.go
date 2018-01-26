@@ -23,32 +23,32 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package softStepper
 
-import(
+import (
 	"fmt"
-	"time"
 	"github.com/the-sibyl/sysfsGPIO"
+	"time"
 )
 
 type Stepper struct {
 	// Enable output pin to the stepper driver IC
-	pinEna *sysfsGPIO.IOPin;
+	pinEna *sysfsGPIO.IOPin
 	// Channel A output pin to the stepper driver IC
-	pinA *sysfsGPIO.IOPin;
+	pinA *sysfsGPIO.IOPin
 	// Channel B output pin to the stepper driver IC
-	pinB *sysfsGPIO.IOPin;
+	pinB *sysfsGPIO.IOPin
 	// Channel C output pin to the stepper driver IC
-	pinC *sysfsGPIO.IOPin;
+	pinC *sysfsGPIO.IOPin
 	// Channel D output pin to the stepper driver IC
-	pinD *sysfsGPIO.IOPin;
+	pinD *sysfsGPIO.IOPin
 	// Internal flag for the stepper's rotational direction
-	stepDirectionForward bool;
+	stepDirectionForward bool
 	// Stepper state. The valid range is 0 to 3.
-	stepState int;
+	stepState int
 	// Pulse duration in milliseconds
-	pulseDuration time.Duration;
+	pulseDuration time.Duration
 	// Internal flag for enabling a hold on the stepper. This flag leaves the driver IC enabled and providing
 	// current.
-	holdEnable bool;
+	holdEnable bool
 }
 
 // Create a Stepper struct with enough data to drive a stepper. Less critical values like HoldEnable may be changed by
@@ -66,24 +66,46 @@ func InitStepper(enaPin int, pinA int, pinB int, pinC int, pinD int, pulseDurati
 	initStepperGpioErrorHandler(err)
 
 	stepper := Stepper{
-		pinEna: ena,
-		pinA: a,
-		pinB: b,
-		pinC: c,
-		pinD: d,
+		pinEna:               ena,
+		pinA:                 a,
+		pinB:                 b,
+		pinC:                 c,
+		pinD:                 d,
 		stepDirectionForward: true,
-		stepState: 0,
-		pulseDuration: pulseDuration,
-		holdEnable: false,
+		stepState:            0,
+		pulseDuration:        pulseDuration,
+		holdEnable:           false,
 	}
 
 	return &stepper
 }
 
-// Helper function for InitStepper to debug
+// Helper function for InitStepper for debugging
 func initStepperGpioErrorHandler(err error) {
 	if err != nil {
 		fmt.Println("GPIO error while initializing stepper:", err)
+	}
+}
+
+// Release all the pins to the stepper driver. If this is not done, the stepper may be locked up even after the program
+// exits.
+func (s *Stepper) ReleaseStepper() {
+	err := s.pinEna.ReleasePin()
+	releaseStepperGpioErrorHandler(err)
+	err = s.pinA.ReleasePin()
+	releaseStepperGpioErrorHandler(err)
+	err = s.pinB.ReleasePin()
+	releaseStepperGpioErrorHandler(err)
+	err = s.pinC.ReleasePin()
+	releaseStepperGpioErrorHandler(err)
+	err = s.pinD.ReleasePin()
+	releaseStepperGpioErrorHandler(err)
+}
+
+// Helper function for ReleaseStepper for debugging
+func releaseStepperGpioErrorHandler(err error) {
+	if err != nil {
+		fmt.Println("GPIO error while releasing stepper:", err)
 	}
 }
 
@@ -107,7 +129,7 @@ func (s *Stepper) step(numSteps int) {
 				s.stepState = 0
 			}
 
-		// Reverse direction case
+			// Reverse direction case
 		} else {
 			if s.stepState > 0 {
 				s.stepState--
@@ -118,28 +140,28 @@ func (s *Stepper) step(numSteps int) {
 
 		// Set the pin outputs based on the new state
 		switch s.stepState {
-			case 0:
-				s.pinA.SetHigh()
-				s.pinB.SetLow()
-				s.pinC.SetHigh()
-				s.pinD.SetLow()
-			case 1:
-				s.pinA.SetLow()
-				s.pinB.SetHigh()
-				s.pinC.SetHigh()
-				s.pinD.SetLow()
-			case 2:
-				s.pinA.SetLow()
-				s.pinB.SetHigh()
-				s.pinC.SetLow()
-				s.pinD.SetHigh()
-			case 3:
-				s.pinA.SetHigh()
-				s.pinB.SetLow()
-				s.pinC.SetLow()
-				s.pinD.SetHigh()
-			default:
-				panic("Code error: default stepper state was reached.")
+		case 0:
+			s.pinA.SetHigh()
+			s.pinB.SetLow()
+			s.pinC.SetHigh()
+			s.pinD.SetLow()
+		case 1:
+			s.pinA.SetLow()
+			s.pinB.SetHigh()
+			s.pinC.SetHigh()
+			s.pinD.SetLow()
+		case 2:
+			s.pinA.SetLow()
+			s.pinB.SetHigh()
+			s.pinC.SetLow()
+			s.pinD.SetHigh()
+		case 3:
+			s.pinA.SetHigh()
+			s.pinB.SetLow()
+			s.pinC.SetLow()
+			s.pinD.SetHigh()
+		default:
+			panic("Code error: default stepper state was reached.")
 		}
 
 		// Now that the new stepper state is driven on the output pins, assert the enable signal so that the driver IC
@@ -190,4 +212,3 @@ func (s *Stepper) DisableHold() {
 	s.holdEnable = false
 	s.pinEna.SetLow()
 }
-
