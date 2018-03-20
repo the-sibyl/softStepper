@@ -31,7 +31,9 @@ import (
 
 type Stepper struct {
 	// Enable output pin to the stepper driver IC
-	pinEna *sysfsGPIO.IOPin
+	pinEna1 *sysfsGPIO.IOPin
+	// Second enable output pin to the stepper driver IC (optional)
+	pinEna2 *sysfsGPIO.IOPin
 	// Channel A output pin to the stepper driver IC
 	pinA *sysfsGPIO.IOPin
 	// Channel B output pin to the stepper driver IC
@@ -49,6 +51,9 @@ type Stepper struct {
 	// Internal flag for enabling a hold on the stepper. This flag leaves the driver IC enabled and providing
 	// current.
 	holdEnable bool
+	// Number of enable pins: 1 or 2. Some drivers have two enable pins, and it may be easier to use two GPIO pins
+	// for wiring's sake
+	numEnablePins int
 }
 
 // Create a Stepper struct with enough data to drive a stepper. Less critical values like HoldEnable may be changed by
@@ -66,7 +71,7 @@ func InitStepper(enaPin int, pinA int, pinB int, pinC int, pinD int, pulseDurati
 	initStepperGpioErrorHandler(err)
 
 	stepper := Stepper{
-		pinEna:               ena,
+		pinEna1:               ena,
 		pinA:                 a,
 		pinB:                 b,
 		pinC:                 c,
@@ -75,6 +80,42 @@ func InitStepper(enaPin int, pinA int, pinB int, pinC int, pinD int, pulseDurati
 		stepState:            0,
 		pulseDuration:        pulseDuration,
 		holdEnable:           false,
+		numEnablePins:        1,
+	}
+
+	return &stepper
+}
+
+// Create a Stepper struct with enough data to drive a stepper. Less critical values like HoldEnable may be changed by
+// the user after initialization.
+func InitStepperTwoEnaPins(enaPin1 int, enaPin2 int, pinA int, pinB int, pinC int, pinD int,
+	pulseDuration time.Duration) *Stepper {
+
+	ena1, err := sysfsGPIO.InitPin(enaPin1, "out")
+	initStepperGpioErrorHandler(err)
+	ena2, err := sysfsGPIO.InitPin(enaPin2, "out")
+	initStepperGpioErrorHandler(err)
+	a, err := sysfsGPIO.InitPin(pinA, "out")
+	initStepperGpioErrorHandler(err)
+	b, err := sysfsGPIO.InitPin(pinB, "out")
+	initStepperGpioErrorHandler(err)
+	c, err := sysfsGPIO.InitPin(pinC, "out")
+	initStepperGpioErrorHandler(err)
+	d, err := sysfsGPIO.InitPin(pinD, "out")
+	initStepperGpioErrorHandler(err)
+
+	stepper := Stepper{
+		pinEna1:               ena1,
+		pinEna2:               ena2,
+		pinA:                 a,
+		pinB:                 b,
+		pinC:                 c,
+		pinD:                 d,
+		stepDirectionForward: true,
+		stepState:            0,
+		pulseDuration:        pulseDuration,
+		holdEnable:           false,
+		numEnablePins:        2,
 	}
 
 	return &stepper
@@ -90,8 +131,12 @@ func initStepperGpioErrorHandler(err error) {
 // Release all the pins to the stepper driver. If this is not done, the stepper may be locked up even after the program
 // exits.
 func (s *Stepper) ReleaseStepper() {
-	err := s.pinEna.ReleasePin()
+	err := s.pinEna1.ReleasePin()
 	releaseStepperGpioErrorHandler(err)
+	if s.numEnablePins == 2 {
+		err := s.pinEna2.ReleasePin()
+		releaseStepperGpioErrorHandler(err)
+	}
 	err = s.pinA.ReleasePin()
 	releaseStepperGpioErrorHandler(err)
 	err = s.pinB.ReleasePin()
@@ -166,14 +211,20 @@ func (s *Stepper) step(numSteps int) {
 
 		// Now that the new stepper state is driven on the output pins, assert the enable signal so that the driver IC
 		// will provide current to the motor.
-		s.pinEna.SetHigh()
+		s.pinEna1.SetHigh()
+		if s.numEnablePins == 2 {
+			s.pinEna2.SetHigh()
+		}
 		time.Sleep(s.pulseDuration)
 	}
 
 	// If the stepper is in holding mode, keep the enable pin asserted so that the coils continue to be driven with
 	// the present state.
 	if s.holdEnable == false {
-		s.pinEna.SetLow()
+		s.pinEna1.SetLow()
+		if s.numEnablePins == 2 {
+			s.pinEna2.SetLow()
+		}
 	}
 }
 
@@ -204,11 +255,18 @@ func (s *Stepper) StepBackwardMulti(numSteps int) {
 // Enable stepper holding. Note: this usually consumes a large amount of energy.
 func (s *Stepper) EnableHold() {
 	s.holdEnable = true
-	s.pinEna.SetHigh()
+	s.pinEna1.SetHigh()
+	if s.numEnablePins == 2 {
+		s.pinEna2.SetHigh()
+	}
 }
 
 // Disable stepper holding
 func (s *Stepper) DisableHold() {
 	s.holdEnable = false
-	s.pinEna.SetLow()
+	s.pinEna1.SetLow()
+	if s.numEnablePins == 2 {
+		s.pinEna2.SetLow()
+	}
 }
+
