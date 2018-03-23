@@ -56,7 +56,7 @@ type Stepper struct {
 	numEnablePins int
 }
 
-// Create a Stepper struct with enough data to drive a stepper. Less critical values like HoldEnable may be changed by
+// Create a Stepper struct with enough data to drive a stepper. Less critical values like holdEnable may be changed by
 // the user after initialization.
 func InitStepper(enaPin int, pinA int, pinB int, pinC int, pinD int, pulseDuration time.Duration) *Stepper {
 	ena, err := sysfsGPIO.InitPin(enaPin, "out")
@@ -83,10 +83,16 @@ func InitStepper(enaPin int, pinA int, pinB int, pinC int, pinD int, pulseDurati
 		numEnablePins:        1,
 	}
 
+	// Set initial state. This is necessary for EnableHold() to work without steping first.
+	stepper.pinA.SetHigh()
+	stepper.pinB.SetLow()
+	stepper.pinC.SetHigh()
+	stepper.pinD.SetLow()
+
 	return &stepper
 }
 
-// Create a Stepper struct with enough data to drive a stepper. Less critical values like HoldEnable may be changed by
+// Create a Stepper struct with enough data to drive a stepper. Less critical values like holdEnable may be changed by
 // the user after initialization.
 func InitStepperTwoEnaPins(enaPin1 int, enaPin2 int, pinA int, pinB int, pinC int, pinD int,
 	pulseDuration time.Duration) *Stepper {
@@ -117,6 +123,12 @@ func InitStepperTwoEnaPins(enaPin1 int, enaPin2 int, pinA int, pinB int, pinC in
 		holdEnable:           false,
 		numEnablePins:        2,
 	}
+
+	// Set initial state. This is necessary for EnableHold() to work without steping first.
+	stepper.pinA.SetHigh()
+	stepper.pinB.SetLow()
+	stepper.pinC.SetHigh()
+	stepper.pinD.SetLow()
 
 	return &stepper
 }
