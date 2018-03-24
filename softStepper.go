@@ -71,7 +71,7 @@ func InitStepper(enaPin int, pinA int, pinB int, pinC int, pinD int, pulseDurati
 	initStepperGpioErrorHandler(err)
 
 	stepper := Stepper{
-		pinEna1:               ena,
+		pinEna1:              ena,
 		pinA:                 a,
 		pinB:                 b,
 		pinC:                 c,
@@ -111,8 +111,8 @@ func InitStepperTwoEnaPins(enaPin1 int, enaPin2 int, pinA int, pinB int, pinC in
 	initStepperGpioErrorHandler(err)
 
 	stepper := Stepper{
-		pinEna1:               ena1,
-		pinEna2:               ena2,
+		pinEna1:              ena1,
+		pinEna2:              ena2,
 		pinA:                 a,
 		pinB:                 b,
 		pinC:                 c,
@@ -282,3 +282,12 @@ func (s *Stepper) DisableHold() {
 	}
 }
 
+// Change the pulse duration
+func (s *Stepper) SetPulseDuration(t time.Duration) {
+	s.pulseDuration = t
+}
+
+// Get the pulse duration
+func (s *Stepper) GetPulseDuration() time.Duration {
+	return s.pulseDuration
+}
